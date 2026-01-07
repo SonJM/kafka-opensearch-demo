@@ -1,0 +1,27 @@
+spring:
+  application:
+    name: kafka-demo
+
+  Kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    consumer:
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+
+app:
+  role: ${APP_ROLE:UNKNOWN}
+
+input:
+  topic: ${INPUT_TOPIC:topic-a}
+
+output:
+  topic:
+    1: ${OUTPUT_TOPIC_1:}
+    2: ${OUTPUT_TOPIC_2:}
+
+opensearch:
+  uris: ${OPENSEARCH_URIS:http://localhost:9200}
