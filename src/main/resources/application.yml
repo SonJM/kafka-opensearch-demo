@@ -2,8 +2,8 @@ spring:
   application:
     name: kafka-demo
 
-  Kafka:
-    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVER:localhost:9092}
     consumer:
       auto-offset-reset: earliest
       key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
@@ -24,4 +24,4 @@ output:
     2: ${OUTPUT_TOPIC_2:}
 
 opensearch:
-  uris: ${OPENSEARCH_URIS:http://localhost:9200}
+  uri: ${OPENSEARCH_URI:http://localhost:9200}

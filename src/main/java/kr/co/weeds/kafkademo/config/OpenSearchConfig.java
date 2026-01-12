@@ -13,7 +13,7 @@ import java.util.Arrays;
 @Configuration
 public class OpenSearchConfig {
 
-    @Value("${opensearch.uris}")
+    @Value("${opensearch.uri}")
     private String uris;
 
     @Bean

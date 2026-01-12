@@ -1,46 +1,45 @@
 services:
-  # Zookeeper
-  zookeeper:
-    image: confluentinc/cp-zookeeper:7.5.0
-    environment:
-      ZOOKEEPER_CLIENT_PORT: 2181
-      ZOOKEEPER_TICK_TIME: 2000
-    networks:
-      - kafka-net
 
   # kafka Broker
   kafka:
-    image: confluentinc/cp-kafka:7.5.0
+    image: apache/kafka:4.1.1
+    hostname: kafka
     container_name: kafka
-    depends_on:
-      - zookeeper
     ports:
-      - "9092:9092"
+      - "9092:9094"    # 외부(Host) 9092 -> 컨테이너 9094
+      - "9093:9093"    # 컨트롤러용
     environment:
-      KAFKA_BROKER_ID: 1                                  # 브로커 고유 번호
-      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181             # 주키퍼 접속 주소
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,PLAINTEXT_HOST://localhost:9092   # 카프카 접속 주소
-      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT    # 프로토콜의 별칭 설정해주는 매핑 표
-      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT                                           # 브로커키리 소통하기 위한 채널 이름
-      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1           # __consumer_offset 내부 토픽 (컨슈머가 어디까지 읽었는데 offset을 저장하기 위해 사용, 기본값 3)
-      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1   # 트랜잭션 상태를 저장하는 내부 로그의 복제본 개수 (기본값 3)
-      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1              # 트랜잭션 로그 작성 성공에 대한 최소 성공 브로커 개수(기본값 2)
-      KAFKA_MIN_INSYNC_REPLICAS: 1                        # 데이터 전송 성공 여부를 체크하기 위한 최소 성공 브로커 개수
-      KAFKA_NUM_PARTITIONS: 3                             # 각 토픽 내 파티션 개수
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
+      
+      # 리스너 설정
+      # - PLAINTEXT: 내부 컨테이너 통신
+      # - CONTROLLER: 메타데이터 관리용 내부 통신
+      # - EXTERNAL: 외부(Host) 통신
+      KAFKA_LISTENERS: PLAINTEXT://:9092,CONTROLLER://:9093,EXTERNAL://:9094
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,EXTERNAL://localhost:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,EXTERNAL:PLAINTEXT
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_NUM_PARTITIONS: 3
     networks:
       - kafka-net
 
   # kafka UI
   kafka-ui:
     image: provectuslabs/kafka-ui:latest
+    container_name: kafka-ui
     depends_on:
       - kafka
     ports:
       - "8080:8080"
     environment:
       KAFKA_CLUSTERS_0_NAME: local-cluster
-      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:29092
-      KAFKA_CLUSTERS_0_ZOOKEEPER: zookeeper:2181
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:9092
     networks:
       - kafka-net
 
@@ -79,8 +78,8 @@ services:
       INPUT_TOPIC: topic-a
       OUTPUT_TOPIC_1: topic-b
       OUTPUT_TOPIC_2: topic-c
-      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
-      OPENSEARCH_URIS: http://opensearch:9200
+      KAFKA_BOOTSTRAP_SERVER: kafka:9092
+      OPENSEARCH_URI: http://opensearch:9200
     depends_on:
       - kafka
       - opensearch
@@ -93,8 +92,8 @@ services:
     environment:
       APP_ROLE: W2
       INPUT_TOPIC: topic-b
-      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
-      OPENSEARCH_URIS: http://opensearch:9200
+      KAFKA_BOOTSTRAP_SERVER: kafka:9092
+      OPENSEARCH_URI: http://opensearch:9200
     depends_on:
       - kafka
       - opensearch
@@ -107,8 +106,8 @@ services:
     environment:
       APP_ROLE: W3
       INPUT_TOPIC: topic-c
-      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
-      OPENSEARCH_URIS: http://opensearch:9200
+      KAFKA_BOOTSTRAP_SERVER: kafka:9092
+      OPENSEARCH_URI: http://opensearch:9200
     depends_on:
       - kafka
       - opensearch
@@ -117,7 +116,7 @@ services:
 
   # Log Generator
   log-generator:
-    image: confluentinc/cp-kafka:7.5.0
+    image: apache/kafka:4.1.1
     container_name: log-generator
     depends_on:
       - kafka
@@ -126,14 +125,14 @@ services:
       - -c
       - |
         echo 'Waiting for Kafka to be ready...'
-        sleep 30
+        sleep 10
         
         echo 'Creating topic if not exists...'
-        kafka-topics --create --topic topic-a --bootstrap-server kafka:29092 --partitions 1 --replication-factor 1 --if-not-exists
+        /opt/kafka/bin/kafka-topics.sh --create --topic topic-a --bootstrap-server kafka:9092 --partitions 3 --replication-factor 1 --if-not-exists
         
         echo 'Start generating logs...'
         while true; do
-          echo "Log-$$(date +%s)-$$RANDOM" | kafka-console-producer --bootstrap-server kafka:29092 --topic topic-a
+          echo "Log-$$(date +%s)-$$RANDOM" | /opt/kafka/bin/kafka-console-producer.sh --bootstrap-server kafka:9092 --topic topic-a
           sleep 1
         done
     networks:
