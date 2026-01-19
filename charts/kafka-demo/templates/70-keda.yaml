@@ -1,0 +1,35 @@
+{{- /* 라이선스 등급별 최대 파드 수 계산 */ -}}
+{{- $maxReplicas := 5 }}
+{{- if eq .Values.license.tier "pro" }}
+  {{- $maxReplicas = 20 }}
+{{- elif eq .Values.license.tier "enterprise" }}
+  {{- $maxReplicas = 100 }}
+{{- end }}
+
+{{- range .Values.apps }}
+{{- if .kafka }}
+---
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: {{ .name }}-scaler
+  namespace: {{ $.Release.Namespace }}
+spec:
+  scaleTargetRef:
+    name: {{ .name }}
+  
+  pollingInterval: 5
+  cooldownPeriod: 30
+  minReplicaCount: 1
+  maxReplicaCount: {{ $maxReplicas }} # 라이선스 등급에 따른 제한 적용
+
+  triggers:
+    - type: kafka
+      metadata:
+        bootstrapServers: kafka-headless:9092
+        consumerGroup: {{ .kafka.consumerGroup }}
+        topic: {{ .kafka.topic }}
+        lagThreshold: "{{ .kafka.lagThreshold }}"
+        offsetResetPolicy: latest
+{{- end }}
+{{- end }}

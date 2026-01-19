@@ -92,3 +92,83 @@ docker compose logs -f w2-service
 ```bash
 docker compose down -v
 ```
+
+
+### 6. k8s 실행 가이드
+1. Docker 이미지 빌드
+   Kubernetes에서 사용할 수 있도록 애플리케이션 이미지를 먼저 빌드해야 합니다. (로컬 K8s 환경인 경우, 해당 환경의
+   Docker Daemon 혹은 레지스트리에 등록되어야 합니다.)
+
+1 # 프로젝트 루트에서 실행
+2 docker build -t my-log-service:latest .
+
+2. Kubernetes 리소스 배포
+   작성된 파일들을 순서대로 적용합니다. (종속성 관계를 고려한 순서입니다.)
+
+    1 # 1. 네임스페이스 및 설정
+    2 kubectl apply -f k8s/00-base.yaml
+    3
+    4 # 2. 인프라 (Kafka, OpenSearch) - 실행 완료까지 잠시 대기 필요
+    5 kubectl apply -f k8s/10-kafka.yaml
+    6 kubectl apply -f k8s/20-opensearch.yaml
+    7
+    8 # 3. 애플리케이션 (W1, W2, W3)
+    9 kubectl apply -f k8s/30-app-deployments.yaml
+10 kubectl apply -f k8s/40-app-services.yaml
+
+3. 동작 확인 및 테스트
+   W1 서비스에 테스트 로그를 전송하여 전체 흐름(W1 -> Kafka -> W2/W3 -> OpenSearch)이 동작하는지 확인합니다.
+
+1 # W1 서비스 포트 포워딩 (로컬 테스트용)
+2 kubectl port-forward svc/w1-service 8081:8080 -n kafka-demo &
+3
+4 # 테스트 로그 발송
+5 curl -X POST "http://localhost:8081/api/test/produce?message=K8s-Demo-Log"
+
+4. 로그 및 데이터 확인
+
+1 # 서비스 로그 확인 (W1)
+2 kubectl logs -l app=w1-service -n kafka-demo -f
+3
+4 # OpenSearch 데이터 확인 (OpenSearch 포트 포워딩 필요)
+5 kubectl port-forward svc/opensearch 9200:9200 -n kafka-demo &
+6 curl -X GET "http://localhost:9200/w1-logs/_search?pretty"
+
+  ---  1. Docker 이미지 빌드
+  Kubernetes에서 사용할 수 있도록 애플리케이션 이미지를 먼저 빌드해야 합니다. (로컬 K8s 환경인 경우, 해당 환경의
+  Docker Daemon 혹은 레지스트리에 등록되어야 합니다.)
+
+1 # 프로젝트 루트에서 실행
+2 docker build -t my-log-service:latest .
+
+2. Kubernetes 리소스 배포
+   작성된 파일들을 순서대로 적용합니다. (종속성 관계를 고려한 순서입니다.)
+
+    1 # 1. 네임스페이스 및 설정
+    2 kubectl apply -f k8s/00-base.yaml
+    3
+    4 # 2. 인프라 (Kafka, OpenSearch) - 실행 완료까지 잠시 대기 필요
+    5 kubectl apply -f k8s/10-kafka.yaml
+    6 kubectl apply -f k8s/20-opensearch.yaml
+    7
+    8 # 3. 애플리케이션 (W1, W2, W3)
+    9 kubectl apply -f k8s/30-app-deployments.yaml
+10 kubectl apply -f k8s/40-app-services.yaml
+
+3. 동작 확인 및 테스트
+   W1 서비스에 테스트 로그를 전송하여 전체 흐름(W1 -> Kafka -> W2/W3 -> OpenSearch)이 동작하는지 확인합니다.
+
+1 # W1 서비스 포트 포워딩 (로컬 테스트용)
+2 kubectl port-forward svc/w1-service 8081:8080 -n kafka-demo &
+3
+4 # 테스트 로그 발송
+5 curl -X POST "http://localhost:8081/api/test/produce?message=K8s-Demo-Log"
+
+4. 로그 및 데이터 확인
+
+1 # 서비스 로그 확인 (W1)
+2 kubectl logs -l app=w1-service -n kafka-demo -f
+3
+4 # OpenSearch 데이터 확인 (OpenSearch 포트 포워딩 필요)
+5 kubectl port-forward svc/opensearch 9200:9200 -n kafka-demo &
+6 curl -X GET "http://localhost:9200/w1-logs/_search?pretty"

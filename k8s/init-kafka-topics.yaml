@@ -1,0 +1,29 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: init-kafka-topics
+  namespace: kafka-demo
+spec:
+  template:
+    spec:
+      containers:
+      - name: init-topics
+        image: apache/kafka:4.1.1
+        command: ["/bin/bash", "-c"]
+        args:
+          - |
+            echo 'Waiting for Kafka to be ready...'
+            sleep 15
+            
+            echo 'Creating topics...'
+            # topic-a (Input)
+            /opt/kafka/bin/kafka-topics.sh --create --topic topic-a --bootstrap-server kafka-headless:9092 --partitions 3 --replication-factor 1 --if-not-exists
+            
+            # topic-b (Output 1)
+            /opt/kafka/bin/kafka-topics.sh --create --topic topic-b --bootstrap-server kafka-headless:9092 --partitions 3 --replication-factor 1 --if-not-exists
+            
+            # topic-c (Output 2)
+            /opt/kafka/bin/kafka-topics.sh --create --topic topic-c --bootstrap-server kafka-headless:9092 --partitions 3 --replication-factor 1 --if-not-exists
+            
+            echo 'All topics created successfully.'
+      restartPolicy: OnFailure

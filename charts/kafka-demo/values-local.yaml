@@ -1,0 +1,17 @@
+global:
+  environment: local
+
+kafka:
+  storage: 100Mi # 로컬 스토리지 절약
+
+# 로컬 테스트에서는 데모를 위해 더 민감한 스케일링 설정 적용 가능
+apps:
+  - name: w1-service
+    image:
+      repository: my-log-service
+      tag: latest
+    role: W1
+    kafka:
+      topic: topic-a
+      consumerGroup: group-W1
+      lagThreshold: "1" # 로컬 데모용으로 낮춤

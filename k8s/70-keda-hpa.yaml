@@ -1,0 +1,35 @@
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: w1-service-scaler
+  namespace: kafka-demo
+spec:
+  scaleTargetRef:
+    name: w1-service # 스케일링 대상 Deployment
+  
+  # [DEMO CONFIGURATION]
+  # 데모 환경의 낮은 트래픽에서도 동작을 확인하기 위해 민감하게 설정함.
+  pollingInterval: 5  # (기본값: 30) 5초마다 메트릭 서버(Kafka)에 Lag 조회
+  cooldownPeriod: 30  # (기본값: 300) 부하가 없어진 후 30초 뒤에 스케일 다운 시작
+  minReplicaCount: 1  # 최소 파드 수
+  maxReplicaCount: 5  # 최대 파드 수
+  
+  # [PRODUCTION CONFIGURATION GUIDE]
+  # pollingInterval: 30   # 운영 환경에서는 Kafka 부하를 줄이기 위해 30초 이상 권장
+  # cooldownPeriod: 300   # 잦은 스케일링(Flapping) 방지를 위해 5분 권장
+  
+  triggers:
+    - type: kafka
+      metadata:
+        bootstrapServers: kafka-headless.kafka-demo.svc.cluster.local:9092
+        consumerGroup: group-W1 # LogWorkerService.java: groupId = "group-${app.role}"
+        topic: topic-a          # init-kafka-topics.yaml: topic-a (Input)
+        
+        # [DEMO CONFIGURATION]
+        lagThreshold: "1"       # Lag가 1만 발생해도 스케일 아웃 트리거
+        
+        # [PRODUCTION CONFIGURATION GUIDE]
+        # lagThreshold: "10"    # 운영 환경의 처리량(Throughput) 목표에 맞춰 상향 조정 (예: 10, 50, 100...)
+        # activationThreshold: "0" # 0이 아니면, 해당 수치 도달 전까진 0 -> 1 스케일링이 발생하지 않음
+        
+        offsetResetPolicy: latest # 오프셋 정보가 없을 때 최신 메시지부터 읽음

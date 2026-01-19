@@ -1,0 +1,118 @@
+# Kafka UI
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kafka-ui
+  namespace: {{ .Release.Namespace }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: kafka-ui
+  template:
+    metadata:
+      labels:
+        app: kafka-ui
+    spec:
+      containers:
+        - name: kafka-ui
+          image: provectuslabs/kafka-ui:latest
+          env:
+            - name: KAFKA_CLUSTERS_0_NAME
+              value: local
+            - name: KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS
+              value: kafka-headless:9092
+          ports:
+            - containerPort: 8080
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: kafka-ui
+  namespace: {{ .Release.Namespace }}
+spec:
+  selector:
+    app: kafka-ui
+  type: LoadBalancer # 로컬 접근 편의성
+  ports:
+    - port: 8090
+      targetPort: 8080
+
+---
+# Log Generator (Optional)
+{{- if .Values.logGenerator.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: log-generator
+  namespace: {{ .Release.Namespace }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: log-generator
+  template:
+    metadata:
+      labels:
+        app: log-generator
+    spec:
+      containers:
+        - name: log-gen
+          image: "{{ if .Values.global.registry }}{{ .Values.global.registry }}/{{ end }}{{ .Values.logGenerator.image.repository }}:{{ .Values.logGenerator.image.tag }}"
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              echo "Installing Kafka Python Client..."
+              pip install kafka-python
+              
+              echo "Starting Log Generator..."
+              cat <<EOF > producer.py
+              from kafka import KafkaProducer
+              import json
+              import time
+              import random
+              
+              producer = KafkaProducer(
+                  bootstrap_servers=['kafka-headless:9092'],
+                  value_serializer=lambda x: json.dumps(x).encode('utf-8')
+              )
+              
+              while True:
+                  # 1초에 10~100개 랜덤 발송
+                  count = random.randint(10, 100)
+                  for _ in range(count):
+                      data = {'level': 'INFO', 'message': 'Log entry', 'timestamp': time.time()}
+                      producer.send('topic-a', value=data)
+                  print(f"Sent {count} messages")
+                  time.sleep(1)
+              EOF
+              
+              python producer.py
+{{- end }}
+
+---
+# Init Kafka Topics
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: init-kafka-topics
+  namespace: {{ .Release.Namespace }}
+spec:
+  ttlSecondsAfterFinished: 60
+  template:
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        - name: init-kafka
+          image: "{{ if .Values.global.registry }}{{ .Values.global.registry }}/{{ end }}{{ .Values.kafka.image.repository }}:{{ .Values.kafka.image.tag }}"
+          command: ["/bin/bash", "-c"]
+          args:
+            - |
+              echo "Waiting for Kafka..."
+              # 간단한 대기 로직
+              sleep 10
+              
+              echo "Creating topics..."
+              /opt/kafka/bin/kafka-topics.sh --create --if-not-exists --bootstrap-server kafka-headless:9092 --partitions 3 --replication-factor 1 --topic topic-a
+              /opt/kafka/bin/kafka-topics.sh --create --if-not-exists --bootstrap-server kafka-headless:9092 --partitions 3 --replication-factor 1 --topic topic-b
+              /opt/kafka/bin/kafka-topics.sh --create --if-not-exists --bootstrap-server kafka-headless:9092 --partitions 3 --replication-factor 1 --topic topic-c

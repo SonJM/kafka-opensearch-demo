@@ -1,0 +1,6 @@
+apiVersion: v2
+name: kafka-demo
+description: Kafka Demo Application with KEDA Autoscaling (Air-gap ready)
+type: application
+version: 0.1.0
+appVersion: "1.0.0"

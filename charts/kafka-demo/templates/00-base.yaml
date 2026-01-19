@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: app-config
+  namespace: {{ .Release.Namespace }}
+data:
+  KAFKA_BOOTSTRAP_SERVER: "kafka-headless:9092"
+  OPENSEARCH_URI: "http://opensearch:9200"
+  INPUT_TOPIC: "topic-a"
+  OUTPUT_TOPIC_1: "topic-b"
+  OUTPUT_TOPIC_2: "topic-c"

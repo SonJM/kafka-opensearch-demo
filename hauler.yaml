@@ -1,0 +1,46 @@
+apiVersion: content.hauler.cattle.io/v1alpha1
+kind: Manifest
+metadata:
+  name: kafka-demo-airgap-package
+spec:
+  # ==========================================
+  # 1. RKE2 Infrastructure (Kubernetes Engine)
+  # ==========================================
+  files:
+    # RKE2 설치 스크립트
+    - path: https://get.rke2.io/install.sh
+      name: install.sh
+    
+    # RKE2 바이너리 (Linux AMD64 기준)
+    # 실제 버전은 최신 안정 버전으로 고정하는 것이 좋습니다 (예: v1.28.x)
+    - path: https://github.com/rancher/rke2/releases/download/v1.28.4%2Brke2r1/rke2.linux-amd64.tar.gz
+      name: rke2.linux-amd64.tar.gz
+      
+    # RKE2 Air-gap Images (CoreDNS, Ingress-Nginx 등 포함)
+    - path: https://github.com/rancher/rke2/releases/download/v1.28.4%2Brke2r1/rke2-images.linux-amd64.tar.zst
+      name: rke2-images.linux-amd64.tar.zst
+
+  # ==========================================
+  # 2. Container Images (Middleware & App)
+  # ==========================================
+  images:
+    # Middleware
+    - name: apache/kafka:4.1.1
+    - name: opensearchproject/opensearch:2.11.1
+    - name: provectuslabs/kafka-ui:latest
+    - name: python:3.9-slim
+    
+    # KEDA
+    - name: ghcr.io/kedacore/keda-operator:2.12.0
+    - name: ghcr.io/kedacore/keda-metrics-apiserver:2.12.0
+    - name: ghcr.io/kedacore/keda-admission-webhooks:2.12.0
+
+    # Applications
+    - name: my-log-service:latest
+
+  # ==========================================
+  # 3. Helm Charts
+  # ==========================================
+  charts:
+    - name: kafka-demo
+      repoURL: ./charts/kafka-demo

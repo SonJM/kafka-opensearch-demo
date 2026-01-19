@@ -1,0 +1,56 @@
+# Global Settings
+global:
+  registry: "" # 폐쇄망 환경 시 "my-registry.local/" 등으로 설정
+  environment: local
+
+# License Tier (controls scaling limits)
+license:
+  tier: basic # basic | pro | enterprise
+
+# Middleware Images
+kafka:
+  image:
+    repository: apache/kafka
+    tag: 4.1.1
+  storage: 1Gi
+
+opensearch:
+  image:
+    repository: opensearchproject/opensearch
+    tag: 2.11.1
+  ui:
+    port: 9200
+
+# Application Services (Extensible List)
+# 새로운 서비스 추가 시, 여기에 항목만 추가하면 됩니다.
+apps:
+  - name: w1-service
+    image:
+      repository: my-log-service
+      tag: latest
+    role: W1
+    kafka:
+      topic: topic-a
+      consumerGroup: group-W1
+      lagThreshold: "10"
+
+  - name: w2-service
+    image:
+      repository: my-log-service
+      tag: latest
+    role: W2
+    # Kafka Trigger가 없는 서비스라면 제외 가능하지만, 
+    # 현재 데모 구조상 KEDA 설정을 위해 필요한 경우 추가
+
+  - name: w3-service
+    image:
+      repository: my-log-service
+      tag: latest
+    role: W3
+
+# Log Generator Tool
+logGenerator:
+  image:
+    repository: python
+    tag: 3.9-slim
+  enabled: true

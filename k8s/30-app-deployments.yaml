@@ -1,0 +1,84 @@
+# Service W1 Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: w1-service
+  namespace: kafka-demo
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: w1-service
+  template:
+    metadata:
+      labels:
+        app: w1-service
+    spec:
+      containers:
+        - name: app
+          image: my-log-service:latest
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: APP_ROLE
+              value: "W1"
+          envFrom:
+            - configMapRef:
+                name: app-config
+          ports:
+            - containerPort: 8080
+
+---
+# Service W2 Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: w2-service
+  namespace: kafka-demo
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: w2-service
+  template:
+    metadata:
+      labels:
+        app: w2-service
+    spec:
+      containers:
+        - name: app
+          image: my-log-service:latest
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: APP_ROLE
+              value: "W2"
+          envFrom:
+            - configMapRef:
+                name: app-config
+
+---
+# Service W3 Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: w3-service
+  namespace: kafka-demo
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: w3-service
+  template:
+    metadata:
+      labels:
+        app: w3-service
+    spec:
+      containers:
+        - name: app
+          image: my-log-service:latest
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: APP_ROLE
+              value: "W3"
+          envFrom:
+            - configMapRef:
+                name: app-config
