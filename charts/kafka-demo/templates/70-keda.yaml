@@ -2,12 +2,12 @@
 {{- $maxReplicas := 5 }}
 {{- if eq .Values.license.tier "pro" }}
   {{- $maxReplicas = 20 }}
-{{- elif eq .Values.license.tier "enterprise" }}
+{{- else if eq .Values.license.tier "enterprise" }}
   {{- $maxReplicas = 100 }}
 {{- end }}
 
 {{- range .Values.apps }}
-{{- if .kafka }}
+{{- if and .name .kafka }}
 ---
 apiVersion: keda.sh/v1alpha1
 kind: ScaledObject

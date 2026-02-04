@@ -1,0 +1,43 @@
+apiVersion: content.hauler.cattle.io/v1alpha1
+kind: Files
+metadata:
+  name: kafka-demo-files
+spec:
+  files:
+    - path: https://get.rke2.io/install.sh
+      name: install.sh
+    - path: https://github.com/rancher/rke2/releases/download/v1.28.4%2Brke2r1/rke2.linux-amd64.tar.gz
+      name: rke2.linux-amd64.tar.gz
+    - path: https://github.com/rancher/rke2/releases/download/v1.28.4%2Brke2r1/rke2-images.linux-amd64.tar.zst
+      name: rke2-images.linux-amd64.tar.zst
+    - path: https://github.com/derailed/k9s/releases/download/v0.32.4/k9s_Linux_amd64.tar.gz
+      name: k9s.tar.gz
+    - path: ./my-log-service.tar
+      name: my-log-service.tar
+
+---
+apiVersion: content.hauler.cattle.io/v1alpha1
+kind: Images
+metadata:
+  name: kafka-demo-images
+spec:
+  images:
+    - name: busybox:latest
+    - name: apache/kafka:4.1.1
+    - name: opensearchproject/opensearch:2.11.1
+    - name: provectuslabs/kafka-ui:latest
+    - name: python:3.9-slim
+    # KEDA
+    - name: ghcr.io/kedacore/keda:2.12.0
+    - name: ghcr.io/kedacore/keda-metrics-apiserver:2.12.0
+    - name: ghcr.io/kedacore/keda-admission-webhooks:2.12.0
+
+---
+apiVersion: content.hauler.cattle.io/v1alpha1
+kind: Charts
+metadata:
+  name: kafka-demo-charts
+spec:
+  charts:
+    - name: kafka-demo
+      repoURL: ./charts/kafka-demo

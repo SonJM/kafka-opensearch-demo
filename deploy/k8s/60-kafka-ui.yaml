@@ -30,10 +30,11 @@ metadata:
   name: kafka-ui
   namespace: kafka-demo
 spec:
-  type: ClusterIP
+  type: NodePort
   ports:
     - port: 8080
       targetPort: 8080
+      nodePort: 30080
       name: http
   selector:
     app: kafka-ui

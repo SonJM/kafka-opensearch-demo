@@ -1,0 +1,44 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: w1-service
+  namespace: kafka-demo
+spec:
+  type: NodePort # 외부 API 호출 및 테스트 용이성을 위해 NodePort 사용
+  ports:
+    - port: 8080
+      targetPort: 8080
+      nodePort: 30081
+      name: http
+  selector:
+    app: w1-service
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: w2-service
+  namespace: kafka-demo
+spec:
+  type: ClusterIP # 내부 통신 및 Metrics 수집용
+  ports:
+    - port: 8080
+      targetPort: 8080
+      name: http
+  selector:
+    app: w2-service
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: w3-service
+  namespace: kafka-demo
+spec:
+  type: ClusterIP # 내부 통신 및 Metrics 수집용
+  ports:
+    - port: 8080
+      targetPort: 8080
+      name: http
+  selector:
+    app: w3-service

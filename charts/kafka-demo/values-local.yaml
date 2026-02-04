@@ -2,16 +2,17 @@ global:
   environment: local
 
 kafka:
-  storage: 100Mi # 로컬 스토리지 절약
+  storage: 100Mi
 
-# 로컬 테스트에서는 데모를 위해 더 민감한 스케일링 설정 적용 가능
+# 앱 리스트 명시적 정의 (리스트 유실 방지)
 apps:
   - name: w1-service
-    image:
-      repository: my-log-service
-      tag: latest
+    image: { repository: my-log-service, tag: latest, pullPolicy: Never }
     role: W1
-    kafka:
-      topic: topic-a
-      consumerGroup: group-W1
-      lagThreshold: "1" # 로컬 데모용으로 낮춤
+    kafka: { topic: topic-a, consumerGroup: group-W1, lagThreshold: "1" }
+  - name: w2-service
+    image: { repository: my-log-service, tag: latest, pullPolicy: Never }
+    role: W2
+  - name: w3-service
+    image: { repository: my-log-service, tag: latest, pullPolicy: Never }
+    role: W3

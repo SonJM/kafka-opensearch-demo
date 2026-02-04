@@ -35,3 +35,8 @@ out/
 
 ### VS Code ###
 .vscode/
+
+kafka-demo-0.1.0.tgz
+kafka-demo.iml
+my-log-service.tar
+store/

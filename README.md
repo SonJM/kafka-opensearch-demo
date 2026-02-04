@@ -26,149 +26,96 @@ Kafka의 동작 원리(Producer/Consumer, Consumer Group)와 Docker Compose를 �
 
 ## 2. 환경 구축 및 실행
 
-Docker 및 Docker Compose가 설치되어 있어야 합니다.
-
-### 실행 명령어
-
-프로젝트 루트 디렉토리에서 다음 명령어를 실행합니다. Kafka 브로커, Zookeeper, 애플리케이션 컨테이너가 모두 자동으로 실행됩니다.
-
+### 방법 A: Docker Compose (빠른 데모)
+Kafka 브로커, OpenSearch, 앱 컨테이너를 로컬 Docker 환경에서 즉시 실행합니다.
 ```bash
-# 컨테이너 빌드 및 백그라운드 실행
 docker compose up -d --build
 ```
 
-### 스케일 아웃 (Scale-out) 테스트
-
-특정 서비스(Consumer)의 처리량을 늘리기 위해 인스턴스를 늘리고 싶다면 `--scale` 옵션을 사용합니다.
-
-```bash
-# 예: W2 서비스를 3대, W3 서비스를 2대로 확장
-docker compose up -d --scale w2-service=3 --scale w3-service=2
-```
-
-## 3. 동작 확인
-
-### Kafka UI 접속
-*   주소: [http://localhost:8080](http://localhost:8080)
-
-### OpenSearch Dashboards 접속
-데이터가 각 인덱스(`w1-logs`, `w2-logs`, `w3-logs`)에 잘 적재되는지 시각적으로 확인할 수 있습니다.
-*   주소: [http://localhost:5601](http://localhost:5601)
-
-### 로그 확인
-각 서비스가 메시지를 정상적으로 주고받는지 Docker 로그로 확인합니다.
+### 방법 B: Kubernetes (Kind + Helm) - 추천 ⭐
+로컬 Kubernetes 클러스터(Kind)를 생성하고 KEDA, Helm 차트를 포함한 전체 스택을 배포합니다. 루트에 있는 `Makefile`을 통해 모든 과정을 자동화했습니다.
 
 ```bash
-docker compose logs -f w1-service
-docker compose logs -f w2-service
+# 1. 전체 환경 자동 구축 (Cluster 생성 + 이미지 빌드/로드 + Helm 배포)
+make up
+
+# 2. 클러스터 및 Pod 상태 확인
+make status
+
+# 3. 실시간 모니터링 (k9s 실행)
+make k9s
+
+# 4. 환경 삭제
+make clean
 ```
 
-## 4. 주요 토픽 및 메시지 구조
+---
 
-| 토픽명 | 설명 | Publisher | Subscriber |
-|:---:|:---:|:---:|:---:|
-| **`topic-a`** | 원본 로그 데이터 스트림 | `log-generator` | `w1-service` |
-| **`topic-b`** | 1차 처리된 문서 ID (분석용) | `w1-service` | `w2-service` |
-| **`topic-c`** | 1차 처리된 문서 ID (인덱싱용) | `w1-service` | `w3-service` |
+## 3. 주요 관리 명령어 (Makefile)
 
-### 메시지 상세 구조
+| 명령어 | 설명 |
+|:---:|:---|
+| `make up` | Kind 클러스터 생성 및 전체 서비스 배포 (`scripts/start-local.sh`) |
+| `make status` | 현재 클러스터, 컨텍스트, 헬름 릴리즈 상태 진단 |
+| `make logs` | 주요 애플리케이션 로그 실시간 확인 |
+| `make k9s` | k9s 모니터링 툴 실행 (설치 필요) |
+| `make clean` | 생성된 Kind 클러스터 및 관련 리소스 완전 삭제 |
+| `make hmac` | HMAC 데이터 이동 및 인덱스 관리 스크립트 실행 |
 
-#### 1. `topic-a` (Raw Log)
-*   **Value**: `String` (Plain Text)
-    ```text
-    Log-1704612345-1234
-    ```
+---
 
-#### 2. `topic-b`, `topic-c` (Document ID)
-*   **Value**: `String` (OpenSearch DocID)
-    ```text
-    550e8400-e29b-41d4-a716-446655440000
-    ```
+## 4. 디렉토리 구조 정리
 
-## 5. 종료
+```text
+.
+├── deploy/             # Kubernetes 인프라 설정
+│   ├── k8s/            # 정적 매니페스트 및 KEDA 설정
+│   └── kind/           # Kind 클러스터 및 Hauler 설정
+├── charts/             # Helm Charts (메인 배포 소스)
+├── scripts/            # 운영 및 자동화 스크립트
+├── src/                # 애플리케이션 소스 코드
+├── Dockerfile          # 앱 이미지 빌드 설정
+├── Makefile            # 통합 커맨드 센터 (Entry point)
+└── docker-compose.yml  # 로컬 데모용 설정
+```
 
-테스트가 끝나면 다음 명령어로 모든 컨테이너와 볼륨을 정리합니다.
+---
+
+## 5. On-Premise Air-gapped Deployment (Hauler)
+
+인터넷이 차단된 고객사 폐쇄망 환경에서 **Hauler**를 이용해 전체 아티팩트를 패키징하고 배포하는 절차입니다.
+
+### 5.1 패키징 (외부망 / 개발자 PC)
+
+1. **애플리케이션 이미지 빌드 및 저장**
+   ```bash
+   docker build -t my-log-service:latest .
+   docker save my-log-service:latest -o my-log-service.tar
+   ```
+
+2. **Hauler 저장소 동기화 (Sync)**
+   `deploy/kind/hauler.yaml`에 정의된 리소스를 동기화합니다.
+   ```bash
+   hauler store add file my-log-service.tar
+   hauler store sync -f deploy/kind/hauler.yaml
+   ```
+
+3. **아티팩트 내보내기 (Save)**
+   ```bash
+   hauler store save --filename kafka-demo-airgap.tar.zst
+   ```
+
+### 5.2 배포 (폐쇄망 / 고객사 서버)
+
+전송된 아티팩트를 사용하여 로컬 레지스트리를 구동하고 배포합니다.
 
 ```bash
-docker compose down -v
+# 1. 로컬 레지스트리/파일 서버 구동
+hauler store serve registry -p 5000 --files-port 8080 kafka-demo-airgap.tar.zst &
+
+# 2. Helm 배포
+helm install kafka-demo oci://localhost:5000/kafka-demo-charts/kafka-demo \
+  --version 0.1.0 \
+  --set global.registry="localhost:5000/" \
+  --namespace kafka-demo --create-namespace
 ```
-
-
-### 6. k8s 실행 가이드
-1. Docker 이미지 빌드
-   Kubernetes에서 사용할 수 있도록 애플리케이션 이미지를 먼저 빌드해야 합니다. (로컬 K8s 환경인 경우, 해당 환경의
-   Docker Daemon 혹은 레지스트리에 등록되어야 합니다.)
-
-1 # 프로젝트 루트에서 실행
-2 docker build -t my-log-service:latest .
-
-2. Kubernetes 리소스 배포
-   작성된 파일들을 순서대로 적용합니다. (종속성 관계를 고려한 순서입니다.)
-
-    1 # 1. 네임스페이스 및 설정
-    2 kubectl apply -f k8s/00-base.yaml
-    3
-    4 # 2. 인프라 (Kafka, OpenSearch) - 실행 완료까지 잠시 대기 필요
-    5 kubectl apply -f k8s/10-kafka.yaml
-    6 kubectl apply -f k8s/20-opensearch.yaml
-    7
-    8 # 3. 애플리케이션 (W1, W2, W3)
-    9 kubectl apply -f k8s/30-app-deployments.yaml
-10 kubectl apply -f k8s/40-app-services.yaml
-
-3. 동작 확인 및 테스트
-   W1 서비스에 테스트 로그를 전송하여 전체 흐름(W1 -> Kafka -> W2/W3 -> OpenSearch)이 동작하는지 확인합니다.
-
-1 # W1 서비스 포트 포워딩 (로컬 테스트용)
-2 kubectl port-forward svc/w1-service 8081:8080 -n kafka-demo &
-3
-4 # 테스트 로그 발송
-5 curl -X POST "http://localhost:8081/api/test/produce?message=K8s-Demo-Log"
-
-4. 로그 및 데이터 확인
-
-1 # 서비스 로그 확인 (W1)
-2 kubectl logs -l app=w1-service -n kafka-demo -f
-3
-4 # OpenSearch 데이터 확인 (OpenSearch 포트 포워딩 필요)
-5 kubectl port-forward svc/opensearch 9200:9200 -n kafka-demo &
-6 curl -X GET "http://localhost:9200/w1-logs/_search?pretty"
-
-  ---  1. Docker 이미지 빌드
-  Kubernetes에서 사용할 수 있도록 애플리케이션 이미지를 먼저 빌드해야 합니다. (로컬 K8s 환경인 경우, 해당 환경의
-  Docker Daemon 혹은 레지스트리에 등록되어야 합니다.)
-
-1 # 프로젝트 루트에서 실행
-2 docker build -t my-log-service:latest .
-
-2. Kubernetes 리소스 배포
-   작성된 파일들을 순서대로 적용합니다. (종속성 관계를 고려한 순서입니다.)
-
-    1 # 1. 네임스페이스 및 설정
-    2 kubectl apply -f k8s/00-base.yaml
-    3
-    4 # 2. 인프라 (Kafka, OpenSearch) - 실행 완료까지 잠시 대기 필요
-    5 kubectl apply -f k8s/10-kafka.yaml
-    6 kubectl apply -f k8s/20-opensearch.yaml
-    7
-    8 # 3. 애플리케이션 (W1, W2, W3)
-    9 kubectl apply -f k8s/30-app-deployments.yaml
-10 kubectl apply -f k8s/40-app-services.yaml
-
-3. 동작 확인 및 테스트
-   W1 서비스에 테스트 로그를 전송하여 전체 흐름(W1 -> Kafka -> W2/W3 -> OpenSearch)이 동작하는지 확인합니다.
-
-1 # W1 서비스 포트 포워딩 (로컬 테스트용)
-2 kubectl port-forward svc/w1-service 8081:8080 -n kafka-demo &
-3
-4 # 테스트 로그 발송
-5 curl -X POST "http://localhost:8081/api/test/produce?message=K8s-Demo-Log"
-
-4. 로그 및 데이터 확인
-
-1 # 서비스 로그 확인 (W1)
-2 kubectl logs -l app=w1-service -n kafka-demo -f
-3
-4 # OpenSearch 데이터 확인 (OpenSearch 포트 포워딩 필요)
-5 kubectl port-forward svc/opensearch 9200:9200 -n kafka-demo &
-6 curl -X GET "http://localhost:9200/w1-logs/_search?pretty"
