@@ -63,11 +63,9 @@ public class LogWorkerService {
 	}
 	
 	// --- [W1] Ingestion: Index to 'w1-logs' ---
-	private void processW1(String message) throws IOException {
-		// 1. Create Log Document
+	private void processW1(String message) throws IOException, InterruptedException {
+		Thread.sleep(100);
 		LogDocument doc = LogDocument.from(message);
-
-		// 2. Index to OpenSearch (w1-logs)
 		IndexRequest request = new IndexRequest(INDEX_W1)
 				.source(doc.toMap());
 
@@ -76,7 +74,6 @@ public class LogWorkerService {
 		
 		log.info("[W1] Indexed to '{}'. DocID: {}", INDEX_W1, docId);
 		
-		// 3. Send DocID to downstream topics
 		if (outputTopic1 != null && !outputTopic1.isEmpty()) {
 			kafkaTemplate.send(outputTopic1, docId);
 			log.info("[W1] Sent DocID to {}", outputTopic1);
@@ -88,8 +85,8 @@ public class LogWorkerService {
 	}
 	
 	// --- [W2] Analysis: Get from 'w1-logs' -> Index to 'w2-logs' ---
-	private void processW2(String docId) throws IOException {
-		// 1. Get from Master Index (W1)
+	private void processW2(String docId) throws IOException, InterruptedException {
+		Thread.sleep(100);
 		GetRequest getRequest = new GetRequest(INDEX_W1, docId);
 		GetResponse getResponse = openSearchClient.get(getRequest, RequestOptions.DEFAULT);
 		
@@ -109,8 +106,8 @@ public class LogWorkerService {
 	}
 	
 	// --- [W3] Final Indexing: Get from 'w1-logs' -> Index to 'w3-logs' ---
-	private void processW3(String docId) throws IOException {
-		// 1. Get from Master Index (W1)
+	private void processW3(String docId) throws IOException, InterruptedException {
+		Thread.sleep(100);
 		GetRequest getRequest = new GetRequest(INDEX_W1, docId);
 		GetResponse getResponse = openSearchClient.get(getRequest, RequestOptions.DEFAULT);
 		

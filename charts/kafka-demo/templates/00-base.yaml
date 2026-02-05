@@ -4,8 +4,6 @@ metadata:
   name: app-config
   namespace: {{ .Release.Namespace }}
 data:
-  KAFKA_BOOTSTRAP_SERVER: "kafka-headless:9092"
-  OPENSEARCH_URI: "http://opensearch:9200"
-  INPUT_TOPIC: "topic-a"
-  OUTPUT_TOPIC_1: "topic-b"
-  OUTPUT_TOPIC_2: "topic-c"
+  KAFKA_BOOTSTRAP_SERVER: "kafka-0.kafka-headless.{{ .Release.Namespace }}.svc.cluster.local:9092"
+  SPRING_KAFKA_BOOTSTRAP_SERVERS: "kafka-0.kafka-headless.{{ .Release.Namespace }}.svc.cluster.local:9092"
+  OPENSEARCH_URI: "http://opensearch.{{ .Release.Namespace }}.svc.cluster.local:9200"

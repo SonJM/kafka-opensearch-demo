@@ -27,6 +27,18 @@ spec:
           env:
             - name: APP_ROLE
               value: "{{ .role }}"
+            {{- if .kafka }}
+            - name: INPUT_TOPIC
+              value: "{{ .kafka.inputTopic | default "" }}"
+            {{- if .kafka.outputTopic1 }}
+            - name: OUTPUT_TOPIC_1
+              value: "{{ .kafka.outputTopic1 }}"
+            {{- end }}
+            {{- if .kafka.outputTopic2 }}
+            - name: OUTPUT_TOPIC_2
+              value: "{{ .kafka.outputTopic2 }}"
+            {{- end }}
+            {{- end }}
           envFrom:
             - configMapRef:
                 name: app-config

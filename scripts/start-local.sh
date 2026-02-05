@@ -35,8 +35,10 @@ echo -e "\nStep 3: Deploying Kafka-Demo via Helm..."
 helm upgrade --install kafka-demo ./charts/kafka-demo \
   -f charts/kafka-demo/values-local.yaml \
   --namespace kafka-demo \
-  --create-namespace \
-  --wait
+  --create-namespace
+
+echo -e "\n✅ Deployment command sent!"
+echo "⏳ Resources are starting up. Please check status with 'make status' or 'make k9s'."
 
 echo -e "\n✅ All resources deployed successfully via Helm!"
 echo "👉 Check status: kubectl get pods -n kafka-demo"

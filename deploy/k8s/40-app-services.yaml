@@ -4,7 +4,7 @@ metadata:
   name: w1-service
   namespace: kafka-demo
 spec:
-  type: NodePort # 외부 API 호출 및 테스트 용이성을 위해 NodePort 사용
+  type: NodePort
   ports:
     - port: 8080
       targetPort: 8080
@@ -20,7 +20,7 @@ metadata:
   name: w2-service
   namespace: kafka-demo
 spec:
-  type: ClusterIP # 내부 통신 및 Metrics 수집용
+  type: ClusterIP
   ports:
     - port: 8080
       targetPort: 8080
@@ -35,7 +35,7 @@ metadata:
   name: w3-service
   namespace: kafka-demo
 spec:
-  type: ClusterIP # 내부 통신 및 Metrics 수집용
+  type: ClusterIP
   ports:
     - port: 8080
       targetPort: 8080

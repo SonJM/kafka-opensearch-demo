@@ -26,9 +26,9 @@ spec:
   triggers:
     - type: kafka
       metadata:
-        bootstrapServers: kafka-headless:9092
+        bootstrapServers: kafka-headless.{{ $.Release.Namespace }}.svc.cluster.local:9092
         consumerGroup: {{ .kafka.consumerGroup }}
-        topic: {{ .kafka.topic }}
+        topic: {{ .kafka.inputTopic }}
         lagThreshold: "{{ .kafka.lagThreshold }}"
         offsetResetPolicy: latest
 {{- end }}

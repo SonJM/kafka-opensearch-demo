@@ -11,6 +11,7 @@ metadata:
   namespace: kafka-demo
 data:
   KAFKA_BOOTSTRAP_SERVER: "kafka-headless:9092"
+  SPRING_KAFKA_BOOTSTRAP_SERVERS: "kafka-headless.kafka-demo.svc.cluster.local:9092"
   OPENSEARCH_URI: "http://opensearch:9200"
 
   INPUT_TOPIC: "topic-a"

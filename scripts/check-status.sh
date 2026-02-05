@@ -24,7 +24,7 @@ fi
 
 # 3. Check Helm Release
 echo -e "\n📊 Helm Release Status:"
-helm list -n kafka-demo -a
+helm list -n kafka-demo --all
 
 # 4. Check Pods
 echo -e "\n📦 Pod Status:"

@@ -1,18 +1,33 @@
 global:
   environment: local
 
+license:
+  tier: pro
+
 kafka:
   storage: 100Mi
 
-# 앱 리스트 명시적 정의 (리스트 유실 방지)
 apps:
   - name: w1-service
     image: { repository: my-log-service, tag: latest, pullPolicy: Never }
     role: W1
-    kafka: { topic: topic-a, consumerGroup: group-W1, lagThreshold: "1" }
+    kafka: 
+      inputTopic: topic-a
+      outputTopic1: topic-b
+      outputTopic2: topic-c
+      consumerGroup: group-W1
+      lagThreshold: "5000"
   - name: w2-service
     image: { repository: my-log-service, tag: latest, pullPolicy: Never }
     role: W2
+    kafka:
+      inputTopic: topic-b
+      consumerGroup: group-W2
+      lagThreshold: "500"
   - name: w3-service
     image: { repository: my-log-service, tag: latest, pullPolicy: Never }
     role: W3
+    kafka:
+      inputTopic: topic-c
+      consumerGroup: group-W3
+      lagThreshold: "500"
