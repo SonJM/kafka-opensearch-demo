@@ -23,7 +23,7 @@ spec:
         - name: app
           # Global Registry 설정이 있으면 앞에 붙임
           image: "{{ if $.Values.global.registry }}{{ $.Values.global.registry }}/{{ end }}{{ .image.repository }}:{{ .image.tag }}"
-          imagePullPolicy: IfNotPresent
+          imagePullPolicy: {{ .image.pullPolicy | default "IfNotPresent" }}
           env:
             - name: APP_ROLE
               value: "{{ .role }}"

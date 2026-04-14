@@ -16,7 +16,8 @@ spec:
     spec:
       containers:
         - name: kafka-ui
-          image: provectuslabs/kafka-ui:latest
+          image: "{{ if .Values.global.registry }}{{ .Values.global.registry }}/{{ end }}{{ .Values.kafkaUI.image.repository }}:{{ .Values.kafkaUI.image.tag }}"
+          imagePullPolicy: {{ .Values.kafkaUI.image.pullPolicy | default "IfNotPresent" }}
           env:
             - name: KAFKA_CLUSTERS_0_NAME
               value: local
@@ -33,7 +34,7 @@ metadata:
 spec:
   selector:
     app: kafka-ui
-  type: LoadBalancer # 로컬 접근 편의성
+  type: LoadBalancer
   ports:
     - port: 8090
       targetPort: 8080
@@ -59,35 +60,22 @@ spec:
       containers:
         - name: log-gen
           image: "{{ if .Values.global.registry }}{{ .Values.global.registry }}/{{ end }}{{ .Values.logGenerator.image.repository }}:{{ .Values.logGenerator.image.tag }}"
-          command: ["/bin/sh", "-c"]
+          imagePullPolicy: {{ .Values.logGenerator.image.pullPolicy | default "IfNotPresent" }}
+          command: ["/bin/bash", "-c"]
           args:
             - |
-              echo "Installing Kafka Python Client..."
-              pip install kafka-python
-              
-              echo "Starting Log Generator..."
-              cat <<EOF > producer.py
-              from kafka import KafkaProducer
-              import json
-              import time
-              import random
-              
-              producer = KafkaProducer(
-                  bootstrap_servers=['kafka-headless:9092'],
-                  value_serializer=lambda x: json.dumps(x).encode('utf-8')
-              )
-              
-              while True:
-                  # 1초에 10~100개 랜덤 발송
-                  count = random.randint(10, 100)
-                  for _ in range(count):
-                      data = {'level': 'INFO', 'message': 'Log entry', 'timestamp': time.time()}
-                      producer.send('topic-a', value=data)
-                  print(f"Sent {count} messages")
-                  time.sleep(1)
-              EOF
-              
-              python producer.py
+              echo "Starting Log Generator (kafka-console-producer)..."
+              while true; do
+                count=$((RANDOM % 91 + 10))
+                for i in $(seq 1 $count); do
+                  printf '{"level":"INFO","message":"Log entry %s","timestamp":"%s"}\n' \
+                    "$i" "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+                done | /opt/kafka/bin/kafka-console-producer.sh \
+                  --bootstrap-server kafka-headless:9092 \
+                  --topic topic-a
+                echo "Sent $count messages"
+                sleep 1
+              done
 {{- end }}
 
 ---
@@ -109,10 +97,14 @@ spec:
           args:
             - |
               echo "Waiting for Kafka..."
-              # 간단한 대기 로직
               sleep 10
-              
               echo "Creating topics..."
-              /opt/kafka/bin/kafka-topics.sh --create --if-not-exists --bootstrap-server kafka-headless:9092 --partitions 3 --replication-factor 1 --topic topic-a
-              /opt/kafka/bin/kafka-topics.sh --create --if-not-exists --bootstrap-server kafka-headless:9092 --partitions 3 --replication-factor 1 --topic topic-b
-              /opt/kafka/bin/kafka-topics.sh --create --if-not-exists --bootstrap-server kafka-headless:9092 --partitions 3 --replication-factor 1 --topic topic-c
+              /opt/kafka/bin/kafka-topics.sh --create --if-not-exists \
+                --bootstrap-server kafka-headless:9092 \
+                --partitions 3 --replication-factor 1 --topic topic-a
+              /opt/kafka/bin/kafka-topics.sh --create --if-not-exists \
+                --bootstrap-server kafka-headless:9092 \
+                --partitions 3 --replication-factor 1 --topic topic-b
+              /opt/kafka/bin/kafka-topics.sh --create --if-not-exists \
+                --bootstrap-server kafka-headless:9092 \
+                --partitions 3 --replication-factor 1 --topic topic-c
