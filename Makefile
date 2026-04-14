@@ -66,7 +66,7 @@ package:
 	@echo ">>> [2/4] Syncing external resources into hauler store..."
 	hauler store sync -f deploy/airgap/hauler.yaml
 	@echo ">>> [3/4] Adding local app image to hauler store..."
-	hauler store add image my-log-service:latest
+	hauler store add image my-log-service:latest --platform linux/amd64
 	@echo ">>> [4/4] Saving bundle..."
 	hauler store save --filename kafka-demo-airgap.tar.zst
 	@echo "Done: kafka-demo-airgap.tar.zst"
@@ -81,7 +81,7 @@ push:
 	@echo ">>> [1/2] Loading bundle into hauler store..."
 	hauler store load kafka-demo-airgap.tar.zst
 	@echo ">>> [2/2] Pushing images to Nexus (172.16.30.128:5000)..."
-	hauler store copy registry://172.16.30.128:5000
+	hauler store copy registry://172.16.30.128:5000 --plain-http
 	@echo "Done: images pushed to 172.16.30.128:5000"
 
 # RKE2 클러스터에 Helm 배포
