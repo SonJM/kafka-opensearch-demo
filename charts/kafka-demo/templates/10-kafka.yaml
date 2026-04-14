@@ -34,6 +34,7 @@ spec:
       containers:
         - name: kafka
           image: "{{ if .Values.global.registry }}{{ .Values.global.registry }}/{{ end }}{{ .Values.kafka.image.repository }}:{{ .Values.kafka.image.tag }}"
+          imagePullPolicy: {{ .Values.kafka.image.pullPolicy | default "IfNotPresent" }}
           ports:
             - containerPort: 9092
             - containerPort: 9093

@@ -16,6 +16,7 @@ spec:
       containers:
         - name: opensearch
           image: "{{ if .Values.global.registry }}{{ .Values.global.registry }}/{{ end }}{{ .Values.opensearch.image.repository }}:{{ .Values.opensearch.image.tag }}"
+          imagePullPolicy: {{ .Values.opensearch.image.pullPolicy | default "IfNotPresent" }}
           env:
             - name: discovery.type
               value: single-node

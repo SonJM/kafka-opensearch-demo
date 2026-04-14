@@ -69,7 +69,7 @@ spec:
                 count=$((RANDOM % 91 + 10))
                 for i in $(seq 1 $count); do
                   printf '{"level":"INFO","message":"Log entry %s","timestamp":"%s"}\n' \
-                    "$i" "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+                    "$i" "$(date -u +%FT%TZ)"
                 done | /opt/kafka/bin/kafka-console-producer.sh \
                   --bootstrap-server kafka-headless:9092 \
                   --topic topic-a
@@ -93,6 +93,7 @@ spec:
       containers:
         - name: init-kafka
           image: "{{ if .Values.global.registry }}{{ .Values.global.registry }}/{{ end }}{{ .Values.kafka.image.repository }}:{{ .Values.kafka.image.tag }}"
+          imagePullPolicy: {{ .Values.kafka.image.pullPolicy | default "IfNotPresent" }}
           command: ["/bin/bash", "-c"]
           args:
             - |
