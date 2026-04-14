@@ -1,6 +1,6 @@
 global:
-  registry: ""
-  environment: local
+  registry: "172.16.30.128:5000"
+  environment: production
 
 license:
   tier: basic # basic | pro | enterprise
@@ -18,11 +18,17 @@ opensearch:
   ui:
     port: 9200
 
+kafkaUI:
+  image:
+    repository: provectuslabs/kafka-ui
+    tag: "v0.7.2"
+
 apps:
   - name: w1-service
     image:
       repository: my-log-service
       tag: latest
+      pullPolicy: IfNotPresent
     role: W1
     kafka:
       inputTopic: topic-a
@@ -35,6 +41,7 @@ apps:
     image:
       repository: my-log-service
       tag: latest
+      pullPolicy: IfNotPresent
     role: W2
     kafka:
       inputTopic: topic-b
@@ -45,6 +52,7 @@ apps:
     image:
       repository: my-log-service
       tag: latest
+      pullPolicy: IfNotPresent
     role: W3
     kafka:
       inputTopic: topic-c
@@ -53,6 +61,7 @@ apps:
 
 logGenerator:
   image:
-    repository: python
-    tag: 3.9-slim
+    repository: apache/kafka
+    tag: 4.1.1
+    pullPolicy: IfNotPresent
   enabled: true
