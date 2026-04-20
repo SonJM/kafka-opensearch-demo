@@ -1,5 +1,5 @@
 global:
-  registry: "172.16.30.128:5000"
+  registry: ""  # install.sh 또는 --set global.registry=<IP>:5000 으로 지정
   environment: production
 
 license:

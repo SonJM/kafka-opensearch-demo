@@ -1,0 +1,30 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(ls /c/Users/sonjm/IdeaProjects/kafka-demo/*.tgz)",
+      "Bash(ls /c/Users/sonjm/IdeaProjects/kafka-demo/*.tar)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git ls-tree:*)",
+      "Bash(git -C /c/Users/sonjm/IdeaProjects/kafka-demo show 1ec9b53:deploy/kind/hauler.yaml)",
+      "Bash(git:*)",
+      "Bash(helm template:*)",
+      "Bash(cat)",
+      "Read(//tmp/**)",
+      "Bash(helm version:*)",
+      "Bash(make --dry-run up)",
+      "Bash(make --dry-run package)",
+      "Bash(make --dry-run push)",
+      "Bash(python3:*)",
+      "Bash(bash /tmp/validate.sh)",
+      "Bash(node:*)",
+      "Bash(skopeo --version)",
+      "Read(//root/**)",
+      "Bash(hauler store:*)",
+      "Bash(apt-get install:*)",
+      "Bash(skopeo copy:*)",
+      "Bash(wait)",
+      "Bash(kubectl config:*)"
+    ]
+  }
+}
